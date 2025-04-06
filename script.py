@@ -3,7 +3,6 @@ import pandas as pd
 import folium
 from streamlit_folium import folium_static
 
-
 st.set_page_config(page_title="Carte des lieux", layout="wide")
 st.title("📍 Carte interactive des lieux (depuis Google Sheets)")
 
@@ -70,7 +69,7 @@ try:
 
             popup_html += "</div>"
 
-            # Utilisation des icônes FontAwesome ou icônes Unicode pour les pins
+            # Création du marqueur avec icône personnalisée
             marker = folium.Marker(
                 location=[row["latitude"], row["longitude"]],
                 popup=folium.Popup(popup_html, max_width=250),
@@ -81,7 +80,7 @@ try:
                 )
             ).add_to(m)
 
-            # Ajout d'un cercle de 2 km autour du marqueur
+            # Ajout du cercle de 2 km autour du marqueur
             folium.Circle(
                 location=[row["latitude"], row["longitude"]],
                 radius=2000,  # Rayon de 2 km
@@ -89,7 +88,7 @@ try:
                 fill=True,
                 fill_color="blue",
                 fill_opacity=0.2,
-            ).add_to(marker)
+            ).add_to(m)
 
         # 🖼️ Affichage de la carte en grand
         folium_static(m, width=1200, height=700)
