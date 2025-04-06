@@ -71,7 +71,7 @@ try:
             popup_html += "</div>"
 
             # Utilisation des icônes FontAwesome ou icônes Unicode pour les pins
-            folium.Marker(
+            marker = folium.Marker(
                 location=[row["latitude"], row["longitude"]],
                 popup=folium.Popup(popup_html, max_width=250),
                 icon=folium.DivIcon(
@@ -80,6 +80,16 @@ try:
                     html=f'<div style="font-size: 24px; color: #333; text-align: center;">{icon}</div>'  # Icône centrée
                 )
             ).add_to(m)
+
+            # Ajout d'un cercle de 2 km autour du marqueur
+            folium.Circle(
+                location=[row["latitude"], row["longitude"]],
+                radius=2000,  # Rayon de 2 km
+                color="blue",
+                fill=True,
+                fill_color="blue",
+                fill_opacity=0.2,
+            ).add_to(marker)
 
         # 🖼️ Affichage de la carte en grand
         folium_static(m, width=1200, height=700)
