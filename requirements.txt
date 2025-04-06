@@ -1,6 +1,16 @@
+<<<<<<< HEAD
 streamlit>=1.24.0
+=======
+streamlit>=1.25.0
+>>>>>>> d7ab6842eab25d700356f680c1123f703965224a
 folium==0.14.0
 numpy==1.26.4
 pandas==2.2.0
 Pillow==10.2.0
+<<<<<<< HEAD
 streamlit-folium
+=======
+streamlit-folium
+
+
+>>>>>>> d7ab6842eab25d700356f680c1123f703965224a
