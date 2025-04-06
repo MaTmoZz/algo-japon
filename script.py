@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import folium
-from streamlit_folium import folium_static
+from streamlit_folium import st_folium
 
 st.set_page_config(page_title="Carte des lieux", layout="wide")
 st.title("📍 Carte interactive des lieux (depuis Google Sheets)")
@@ -17,24 +17,22 @@ try:
     if not all(col in df.columns for col in required_columns):
         st.error(f"❌ Colonnes manquantes. Requises : {', '.join(required_columns)}")
     else:
-        # Nettoyage des espaces et des caractères invisibles dans les colonnes "nom" et "ville"
+        # Nettoyage des espaces et des caractères invisibles
         df['nom'] = df['nom'].str.strip()
         df['ville'] = df['ville'].str.strip()
 
         # 🎛️ Barre latérale avec filtres
         st.sidebar.title("🔎 Filtres")
 
-        # Filtre par Type
         types_disponibles = df['Type'].unique().tolist()
         types_selectionnes = st.sidebar.multiselect("Type de lieu :", types_disponibles, default=types_disponibles)
 
-        # Filtre par Ville avec l'option "Toutes les villes"
         villes_disponibles = ['Toutes les villes', 'Tokyo', 'Kyoto', 'Osaka', 'Nara', 'Kobe']
-        villes_selectionnees = st.sidebar.multiselect("Filtrer par ville :", villes_disponibles, default=['Toutes les villes'])
+        villes_selectionnees = st.sidebar.multiselect("Filtrer par ville :", villes_disponibles,
+                                                      default=['Toutes les villes'])
 
-        # 📄 Filtrage par Type et Ville
         if 'Toutes les villes' in villes_selectionnees:
-            df_filtre = df[df['Type'].isin(types_selectionnes)]  # Pas de filtre sur les villes
+            df_filtre = df[df['Type'].isin(types_selectionnes)]
         else:
             df_filtre = df[df['Type'].isin(types_selectionnes) & df['ville'].isin(villes_selectionnees)]
 
@@ -45,21 +43,36 @@ try:
             tiles="CartoDB positron"
         )
 
+        # Ajout du JS global pour pouvoir dessiner les cercles depuis les popups
+        m.get_root().html.add_child(folium.Element("""
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                window._map = window._map || null;
+                for (let i in window._map?._layers) {
+                    if (window._map._layers[i]._latlng) {
+                        window._map = window._map._layers[i]._map;
+                        break;
+                    }
+                }
+            });
+        </script>
+        """))
+
         # 📍 Marqueurs avec icônes personnalisées
         icon_mapping = {
-            "Loisir": "🎡",    # Parc d'attraction
-            "Resto": "🍣",     # Restaurant
-            "Food": "🍜",      # Nourriture
-            "Hôtel": "🏨",     # Hôtel
+            "Loisir": "🎡",
+            "Resto": "🍣",
+            "Food": "🍜",
+            "Hôtel": "🏨",
         }
 
         for _, row in df_filtre.iterrows():
-            icon = icon_mapping.get(row["Type"], "🔵")  # Icône par défaut (si type non défini)
+            icon = icon_mapping.get(row["Type"], "🔵")
 
-            # HTML du popup
+            # Création du contenu HTML du popup
             popup_html = f"""
                 <div style="width:200px">
-                    <h3 style="color: #333; font-size: 16px; margin: 0;">{row['nom']}</h3>  <!-- Nom plus gros -->
+                    <h3 style="color: #333; font-size: 16px; margin: 0;">{row['nom']}</h3>
                     <b>{row['adresse']}</b><br>
                     Type : {row['Type']}<br>
             """
@@ -67,31 +80,36 @@ try:
             if 'image' in row and pd.notna(row['image']):
                 popup_html += f'<img src="{row["image"]}" width="100%" style="margin-top:5px;" />'
 
-            popup_html += "</div>"
+            # Script JS pour créer un cercle au clic sur le bouton
+            popup_html += f"""
+                <script>
+                function addCircle_{row['latitude']}_{row['longitude']}() {{
+                    var circle = L.circle([{row['latitude']}, {row['longitude']}], {{
+                        color: 'blue',
+                        fillColor: 'blue',
+                        fillOpacity: 0.2,
+                        radius: 2000
+                    }}).addTo(window._map);
+                }}
+                </script>
+                <button onclick="addCircle_{row['latitude']}_{row['longitude']}()">Afficher rayon 2km</button>
+                </div>
+            """
 
-            # Création du marqueur avec icône personnalisée
+            # Création du marqueur
             marker = folium.Marker(
                 location=[row["latitude"], row["longitude"]],
                 popup=folium.Popup(popup_html, max_width=250),
                 icon=folium.DivIcon(
                     icon_size=(30, 30),
                     icon_anchor=(15, 15),
-                    html=f'<div style="font-size: 24px; color: #333; text-align: center;">{icon}</div>'  # Icône centrée
+                    html=f'<div style="font-size: 24px; color: #333; text-align: center;">{icon}</div>'
                 )
-            ).add_to(m)
+            )
+            marker.add_to(m)
 
-            # Ajout du cercle de 2 km autour du marqueur
-            folium.Circle(
-                location=[row["latitude"], row["longitude"]],
-                radius=2000,  # Rayon de 2 km
-                color="blue",
-                fill=True,
-                fill_color="blue",
-                fill_opacity=0.2,
-            ).add_to(m)
-
-        # 🖼️ Affichage de la carte en grand
-        folium_static(m, width=1200, height=700)
+        # 🖼️ Affichage de la carte
+        st_folium(m, width=1200, height=700)
 
 except Exception as e:
     st.error(f"Erreur lors du chargement des données : {e}")
