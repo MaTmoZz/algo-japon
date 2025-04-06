@@ -81,14 +81,21 @@ try:
             ).add_to(m)
 
             # Ajout du cercle de 2 km autour du marqueur
-            folium.Circle(
+            circle = folium.Circle(
                 location=[row["latitude"], row["longitude"]],
                 radius=2000,  # Rayon de 2 km
                 color="blue",
                 fill=True,
                 fill_color="blue",
                 fill_opacity=0.2,
+                # Le cercle est invisible au début
+                opacity=0
             ).add_to(m)
+
+            # JavaScript pour afficher le cercle au clic sur le marqueur
+            marker.add_child(folium.Popup('Cliquez sur ce marqueur').add_child(folium.ClickForMarker(
+                options={"event": "click", "handler": f"function() {{ {circle.get_name()}.setStyle({{ opacity: 1 }}); }}"})
+            ))
 
         # 🖼️ Affichage de la carte en grand
         folium_static(m, width=1200, height=700)
