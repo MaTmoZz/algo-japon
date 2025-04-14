@@ -105,6 +105,9 @@ try:
             "Ambassade": "🏛️",
             "Onigiri": "🍙",
             "Tempura": "🍤",
+            "Tour": "🗼",
+            "Musée": "🏛️",
+            "Temple": "🏯",
         }
 
         for _, row in df_filtre.iterrows():
